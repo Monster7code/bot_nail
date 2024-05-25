@@ -153,9 +153,9 @@ async def send_message(user_id, result):
 @dp.callback_query(lambda call: call.data[:7] == "sign_up")
 async def sign_up(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(f"Вы записались на {call.message.text}\nМастер скоро свяжеться с вами")
-    await bot.send_message(chat_id="5805700754", text=f'Сука на ногти в {call.message.text}\n'
+    await bot.send_message(chat_id="5805700754", text=f'Новая запись в {call.message.text}\n'
                                                       f'На {call.data.split("|")[1]}'
-                                                           f'\nВот эта сука <a href="{call.from_user.url}">{call.from_user.username}</a>\n'
+                                                           f'\nПользователь: <a href="{call.from_user.url}">{call.from_user.username}</a>\n'
                            , parse_mode="html")
 
 
