@@ -23,4 +23,5 @@ class AdminState(StatesGroup):
     create_new_test_answer = State()
     create_new_question_or_not = State()
     change_image_design = State()
+    choice_day = State()
 

@@ -28,7 +28,6 @@ def get_index_day_start(days):
     num_day = 0
 
     for day in days[1:]:
-        print(day)
         if day == ("Время/место"):
             continue
         tek_time = datetime.strptime(day, "%d.%m.%Y")

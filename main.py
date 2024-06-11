@@ -17,7 +17,7 @@ bot = Bot(token)
 loop = asyncio.get_event_loop()
 dp = Dispatcher(Bot=bot, loop=loop, storage=MemoryStorage())
 conn = connect_db()
-admin_tg_id = "6259845330"
+admin_tg_id = "6913265328"
 
 def get_conn():
     return conn
@@ -46,11 +46,25 @@ async def any_message(message: Message, state: FSMContext):
 async def sign_up_service(call: types.CallbackQuery, state: FSMContext):
     text = ""
     index = 0
+    await state.set_state(AdminState.choice_day)
     for date in get_dates():
         text += f"/{index} --- посмотреть свободные места на дату {date}\n"
         index += 1
 
-    await call.message.answer(text, reply_markup=ReplyKeyboardRemove())
+    await call.message.answer(text, reply_markup=default_keyboard.as_markup())
+
+
+@dp.message(AdminState.choice_day)
+async def changer(message: Message, state: FSMContext):
+    if message.text.lower() == "назад":
+        await message.answer("Вы вернулись в главное меню", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
+        text = get_start_message(conn, admin_tg_id)
+
+        await bot.send_photo(chat_id=message.from_user.id,
+                             photo=types.FSInputFile(path="images/main.jpg"),
+                             caption=text,
+                             reply_markup=create_start_keyboard().as_markup(resize_keyboard=True))
 
 
 @dp.callback_query(lambda call: call.data == "palette_colors")
@@ -90,7 +104,6 @@ async def choice_design(call: types.CallbackQuery, state: FSMContext):
                               reply_markup=types.ReplyKeyboardRemove())
     if get_design_test(conn, admin_tg_id):
         query_set = get_design_test(conn, admin_tg_id)
-        print(query_set)
         await state.set_data({"query_set": query_set, "index": 1, "result": 0})
         await call.message.answer(query_set[0][0],
                                   reply_markup=generate_keyboard(query_set[0][1:]).as_markup(resize_keyboard=True))
@@ -218,9 +231,13 @@ async def sign_up(call: types.CallbackQuery, state: FSMContext):
                                   f"\nНа услугу {call.data.split("|")[1]}",
                                   reply_markup=create_start_keyboard().as_markup())
 
-        await bot.send_message(chat_id="5805700754", text=f'Новая запись в {time}\n'
-                                                          f'На {day}, услуга: {call.data.split("|")[1]}'
-                                                               f'\nПользователь: <a href="{call.from_user.url}">{call.from_user.username}</a>\n'
+        text = f'Новая запись в {time}\nНа {day}, услуга: {call.data.split("|")[1]}\n'
+        if call.from_user.username is None:
+            text += f'<b>•Профиль в телеграме:</b> <a href="{call.from_user.url}">Ссылка на профиль</a>'
+        else:
+            text += (f'<b>•Профиль в телеграме:</b>'
+                     f' <a href="https://t.me/{call.from_user.username}">Ссылка на профиль</a>')
+        await bot.send_message(chat_id="5805700754", text=text
                                , parse_mode="html")
         if create_recording(day, time, str(call.from_user.url)):
             await bot.send_message(chat_id="5805700754", text=f'Новая запись в занесена в таблицу\n')
@@ -572,7 +589,7 @@ async def change_info_service_text(message: Message, state: FSMContext):
     else:
         set_new_info_service_text(conn, admin_tg_id, message.text)
         await message.answer("Вы успешно поменяли текст")
-        await state.set_state(AdminState.change_main)
+        await state.set_state(AdminState.change_info_service)
         text = ("На данный момент информация об услугах выглядит так:\n"
                 + get_info_service_message(conn, admin_tg_id))
         await bot.send_photo(chat_id=message.from_user.id,
@@ -587,8 +604,8 @@ async def change_info_service_image(message: Message, state: FSMContext):
         file_name = f"images/clear.jpg"
         await bot.download(message.photo[-1], destination=file_name)
         await message.answer("Вы успешно поменяли фото")
-        await state.set_state(AdminState.change_main)
-        text = "На данный момент информация об услугах выглядит так:\n" + get_start_message(conn, admin_tg_id)
+        await state.set_state(AdminState.change_info_service)
+        text = "На данный момент информация об услугах выглядит так:\n" + get_info_service_message(conn, admin_tg_id)
         await bot.send_photo(chat_id=message.from_user.id,
                              photo=types.FSInputFile(path="images/clear.jpg"),
                              caption=text,
